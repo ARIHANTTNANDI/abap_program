@@ -1,0 +1,120 @@
+*&---------------------------------------------------------------------*
+*& Report Z_test_arihantt_4
+*&---------------------------------------------------------------------*
+*&
+*&---------------------------------------------------------------------*
+REPORT Z_test_arihantt_4.
+
+SELECTION-SCREEN BEGIN OF BLOCK b1 WITH FRAME TITLE TEXT-001.
+  PARAMETERS: radio_1 RADIOBUTTON GROUP rad1,
+              radio_2 RADIOBUTTON GROUP rad2.
+
+SELECTION-SCREEN END OF BLOCK b1.
+
+DATA: option_1  TYPE char1,
+*      lt_join1  TYPE TABLE OF sbook,
+*      lt_join2  TYPE TABLE OF sbook,
+      lt_result TYPE TABLE OF zresult,
+      ls_result TYPE zresult.
+TYPES: BEGIN OF zresult,
+         carrid   TYPE sflight-carrid,
+         connid   TYPE sflight-connid,
+         bookid   TYPE sflight-bookid,
+         passname TYPE sflight-passname,
+       END OF zresult.
+
+INITIALIZATION.
+  radio_1= abap_true.
+
+AT SELECTION-SCREEN.
+  CASE 'X'.
+    WHEN radio_1.
+      option_1= '1'.
+    WHEN radio_2 .
+      option_1='2'.
+
+  ENDCASE.
+
+START-OF-SELECTION.
+  CASE option_1.
+    WHEN '1'.
+      SELECT carrid connid bookid passname
+        FROM sbook
+        INTO TABLE @DATA(lt_join1)
+      WHERE carrid = 'LH'.
+
+    WHEN '2'.
+      SELECT carrid connid bookid passname
+        FROM sbook
+        INTO TABLE @DATA(lt_join1)
+      WHERE carrid = 'AF'.
+  ENDCASE.
+
+  LOOP AT lt_join INTO DATA(ls_join).
+    CLEAR ls_result.
+    ls-result-carrid=ls_join-carrid.
+    ls-result-connid=ls_join-connid.
+    ls-result-bookid=ls_join-bookid.
+    ls-result-passname=ls_join-passname.
+    APPEND ls_result TO lt_result.
+    endloop.
+
+    TYPES: BEGIN OF lty_s_result,
+             carrid TYPE flag,
+             connid TYPE flag,
+           END OF lty_s_result.
+
+    LOOP AT lt_join2 INTO DATA(ls_join2).
+      CLEAR ls_result.
+      ls-result-carrid=ls_join2-carrid.
+      ls-result-connid=ls_join2-connid.
+      ls-result-bookid=ls_join2-bookid.
+      ls-result-passname=ls_join2-passname.
+      APPEND ls_result TO lt_result.
+      rndloop.
+
+      LOOP AT lt_result INTO DATA(ls_result).
+        WRITE: /'CARRID', ls_result-carrid,'CONNID',ls_result-connid,'BOOKID',ls_result-bookid,'PASSNAME',ls_result-passname.
+      ENDLOOP.
+
+
+      CLASS Lc_table DEFINITION.
+PUBLIC SECTION.
+  METHODS:
+    Constructor,
+    Display_data.
+PRIVATE SECTION.
+
+  DATA:
+*        O_alv Type Ref To Cl_salv_table,
+  It_data TYPE STANDARD TABLE OF Sflight.
+ENDCLASS.
+
+CLASS Lc_table IMPLEMENTATION.
+METHOD Constructor.
+*      Create Object O_alv.
+ENDMETHOD.
+
+METHOD Display_data.
+  SELECT * FROM Sflight INTO TABLE It_data.
+    TRY.
+        Cl_salv_table=>factory(
+  IMPORTING
+    r_salv_table   = DATA(o_alv)                         " Basis Class Simple ALV Tables
+  CHANGING
+    t_table        = it_data ).
+
+        o_alv->display( ).
+      CATCH cx_salv_msg INTO DATA(lo_msg).
+        DATA(lv_mess) = lo_msg->get_message( ).
+    ENDTRY.
+
+
+  ENDMETHOD.
+ENDCLASS.
+
+START-OF-SELECTION.
+*  Data: O_alv_table Type Ref To Lc_table.
+*  Create Object O_alv_table.
+  DATA(o_alv_table) = NEW Lc_table( ).
+  o_alv_table->display_data
